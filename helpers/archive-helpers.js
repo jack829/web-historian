@@ -2,6 +2,7 @@ var fs = require('fs');
 var path = require('path');
 var _ = require('underscore');
 
+
 /*
  * You will need to reuse the same paths many times over in the course of this sprint.
  * Consider using the `paths` object below to store frequently used file paths. This way,
@@ -9,11 +10,13 @@ var _ = require('underscore');
  * customize it in any way you wish.
  */
 
-exports.paths = {
+var paths = {
   'siteAssets' : path.join(__dirname, '../web/public'),
   'archivedSites' : path.join(__dirname, '../archives/sites'),
   'list' : path.join(__dirname, '../archives/sites.txt')
 };
+
+exports.paths = paths;
 
 // Used for stubbing paths for jasmine tests, do not modify
 exports.initialize = function(pathsObj){
@@ -25,16 +28,33 @@ exports.initialize = function(pathsObj){
 // The following function names are provided to you to suggest how you might
 // modularize your code. Keep it clean!
 
-exports.readListOfUrls = function(){
+exports.readListOfUrls = function(callback){
+  var result = '';
+  var file = fs.createReadStream(paths.list);
+  file.on('data', function(chunk) {
+    result += chunk;
+  });
+  file.on('end', function(){
+    sol = result.split('\n');
+    callback(sol);
+  });
 };
 
-exports.isUrlInList = function(){
+exports.isUrlInList = function(url){
+  return false;
 };
 
-exports.addUrlToList = function(){
+exports.addUrlToList = function(url, callback){
+  var newUrl = url.slice(4);
+  var name = newUrl + "\n";
+  fs.writeFile(paths.list, name, function(err) {
+    if( err ) throw err;
+    callback();
+  });
 };
 
-exports.isURLArchived = function(){
+exports.isURLArchived = function(url){
+  return fs.existsSync(url);
 };
 
 exports.downloadUrls = function(){
