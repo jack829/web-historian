@@ -6,7 +6,6 @@ var fs = require('fs');
 var url = require('url');
 
 exports.handleRequest = function (req, res) {
-
   if( req.method === "GET" ){
     var part = url.parse(req.url);
     var urlPath = part.pathname === '/' ? '/index.html' : part.pathname;
@@ -24,18 +23,24 @@ exports.handleRequest = function (req, res) {
   if( req.method === "POST" ){
     utils.collectData(req, function(data) {
       var newUrl = data.slice(4);
-      console.log(newUrl);
       archive.isUrlInList(newUrl, function(exist) {
-        if (exist){
-          archive.isUrlArchived(newUrl, function(isArchived) {
+        if (exist === true){
+
+          archive.isURLArchived(newUrl, function(isArchived) {
             if(isArchived) {
               utils.sendRedirect(res, '/' + newUrl);
-            } else {
+            }
+
+            if(!isArchived) {
               utils.sendRedirect(res, '/loading.html');
             }
-          })
-        } else {
+          });
+        }
+
+        if(exist === false) {
+          console.log(exist);
           archive.addUrlToList(newUrl, function() {
+            console.log(" should implement me");
             utils.sendRedirect(res, '/loading.html');
           });
         }
