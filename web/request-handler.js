@@ -1,53 +1,46 @@
 var path = require('path');
 var archive = require('../helpers/archive-helpers');
 // require more modules/folders here!
-var headers = require('./http-helpers.js');
+var utils = require('./http-helpers.js');
 var fs = require('fs');
+var url = require('url');
 
 exports.handleRequest = function (req, res) {
-  var url = req.url;
 
   if( req.method === "GET" ){
-    url = path.join(archive.paths.archivedSites, url);
-    if( req.url !== '/' && archive.isURLArchived(url) ) {
-      readContent(url, res);
-    } else {
-      if ( req.url !== '/' ){
-        res.writeHead(404, headers);
-        res.end();
-      } else {
-        var asset = path.join(archive.paths.siteAssets, '/index.html');
-        readContent(asset, res);
-      }
-    }
+    var part = url.parse(req.url);
+    var urlPath = part.pathname === '/' ? '/index.html' : part.pathname;
+    utils.serveAssets(res, urlPath, function() {
+      archive.isUrlInList(urlPath.slice(1), function(isIn) {
+        if(isIn) {
+          utils.sendRedirect(res, '/loading.html');
+        } else {
+          utils.sendResponse(res, "Not Found", 404);
+        }
+      })
+    });
   }
 
   if( req.method === "POST" ){
-    var newUrl = "";
-
-    req.on('data', function(chunk) {
-      newUrl += chunk;
-    });
-
-    req.on('end', function(){
-      if( !archive.isUrlInList(newUrl) ) {
-        archive.addUrlToList(newUrl, function() {
-          res.writeHead(302, headers);
-          res.end();
-        });
-      }
+    utils.collectData(req, function(data) {
+      var newUrl = data.slice(4);
+      console.log(newUrl);
+      archive.isUrlInList(newUrl, function(exist) {
+        if (exist){
+          archive.isUrlArchived(newUrl, function(isArchived) {
+            if(isArchived) {
+              utils.sendRedirect(res, '/' + newUrl);
+            } else {
+              utils.sendRedirect(res, '/loading.html');
+            }
+          })
+        } else {
+          archive.addUrlToList(newUrl, function() {
+            utils.sendRedirect(res, '/loading.html');
+          });
+        }
+      });
     });
   }
-};
-
-var readContent = function(url, res) {
-  fs.readFile(url, function(err, data) {
-    if(err) {
-      throw err;
-    }
-    res.writeHead(200, headers);
-    res.write(data);
-    res.end();
-  });
 };
 

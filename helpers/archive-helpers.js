@@ -40,21 +40,31 @@ exports.readListOfUrls = function(callback){
   });
 };
 
-exports.isUrlInList = function(url){
-  return false;
+exports.isUrlInList = function(url, callback){
+  exports.readListOfUrls(function(urlArray){
+    for (var i = urlArray.length-1; i >=0; i--) {
+      if (urlArray[i] === url) {
+        callback(true);
+      }
+    }
+    callback(false);
+  });
 };
 
 exports.addUrlToList = function(url, callback){
-  var newUrl = url.slice(4);
-  var name = newUrl + "\n";
+  var name = url + "\n";
   fs.writeFile(paths.list, name, function(err) {
     if( err ) throw err;
     callback();
   });
 };
 
-exports.isURLArchived = function(url){
-  return fs.existsSync(url);
+exports.isURLArchived = function(url, callback){
+  var newUrl = '/' + url;
+  newUrl = path.join(paths.archivedSites, newUrl);
+  fs.exists(newUrl, function(exists) {
+    callback(exists);
+  });
 };
 
 exports.downloadUrls = function(){
